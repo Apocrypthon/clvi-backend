@@ -1,0 +1,17 @@
+# STRATA ledger — Netlify site configuration.
+# Secrets (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, LEDGER_SECRET) live ONLY as
+# Netlify environment variables. Never commit them to this repo.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Routes are declared per-function via `export const config = { path: ... }`
+# (Netlify Functions 2.0). See docs/ARCHITECTURE.md#routes.
