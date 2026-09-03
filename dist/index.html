@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>STRATA ledger</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --ink: #16211c;
+        --paper: #f4f1e8;
+        --muted: #5d6b62;
+        --rule: #d6d0c0;
+        --ok: #1f7a4d;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ink: #e6e9e4;
+          --paper: #13170f;
+          --muted: #97a396;
+          --rule: #2c3428;
+          --ok: #6fcf97;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 3rem 1.25rem;
+        background: var(--paper);
+        color: var(--ink);
+        font: 15px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      main { max-width: 42rem; margin: 0 auto; }
+      h1 { font-size: 1.25rem; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 0.25rem; }
+      p.sub { color: var(--muted); margin: 0 0 2rem; }
+      #status { font-weight: 600; }
+      #status[data-ok="true"] { color: var(--ok); }
+      dl { display: grid; grid-template-columns: minmax(9rem, auto) 1fr; gap: 0.35rem 1.25rem; margin: 0; }
+      dt { color: var(--muted); }
+      dd { margin: 0; overflow-wrap: anywhere; }
+      hr { border: 0; border-top: 1px solid var(--rule); margin: 2rem 0; }
+      code { background: color-mix(in srgb, var(--ink) 8%, transparent); padding: 0.1em 0.35em; border-radius: 3px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>STRATA ledger</h1>
+      <p class="sub">Verified hash solves &rarr; immutable chain &rarr; one Guardian token per find &rarr; signed kWh self-audit.</p>
+
+      <dl>
+        <dt>status</dt><dd id="status">checking&hellip;</dd>
+        <dt>version</dt><dd id="version">&mdash;</dd>
+        <dt>checked</dt><dd id="checked">&mdash;</dd>
+      </dl>
+
+      <hr />
+
+      <dl>
+        <dt><code>POST /challenge</code></dt><dd>issue a single-use proof-of-work challenge</dd>
+        <dt><code>POST /submit</code></dt><dd>verify a solve, append it, mint its Guardian token</dd>
+        <dt><code>GET /audit/latest</code></dt><dd>signed self-audit of the latest chain slice</dd>
+        <dt><code>GET /audit/<i>from</i>.<i>to</i></code></dt><dd>signed self-audit of an explicit ISO-8601 range</dd>
+        <dt><code>POST /verify</code></dt><dd>re-check the signature on a pasted report</dd>
+        <dt><code>GET /health</code></dt><dd>liveness</dd>
+      </dl>
+
+      <hr />
+      <p class="sub">Live totals land here at M6 &mdash; see <code>docs/STATE.md</code>.</p>
+    </main>
+
+    <script>
+      fetch("/health", { headers: { accept: "application/json" } })
+        .then((res) => res.json())
+        .then((body) => {
+          const status = document.getElementById("status");
+          status.textContent = body.ok ? "ok" : "degraded";
+          status.dataset.ok = String(Boolean(body.ok));
+          document.getElementById("version").textContent = body.version ?? "—";
+          document.getElementById("checked").textContent = body.ts ?? "—";
+        })
+        .catch(() => {
+          document.getElementById("status").textContent = "unreachable";
+        });
+    </script>
+  </body>
+</html>
