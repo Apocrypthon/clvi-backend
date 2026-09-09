@@ -147,6 +147,38 @@ quietly acquire an unaudited energy cost.
 **Not to be taken in this repo.** If it is ever taken, it belongs in
 clvi-architecture first.
 
+#### The Cosmos SDK proposal (recorded 2026-09-09)
+
+A concrete shape has been put forward: a Cosmos SDK chain formalizing a
+`MsgSolveHash` message, with player progression minted as **Guardian Coin**.
+Recorded here per the stack rule that requires it, and **not** implemented.
+
+Three specific problems it has to answer before it could be taken:
+
+1. **Two authorities minting for one event.** This ledger already mints exactly
+   one Guardian token per verified find, and `guardian_tokens.entry_id` is UNIQUE
+   precisely so a find can never mint twice (`docs/SCHEMA.md`). A chain that also
+   mints on `MsgSolveHash` is a second minting authority for the same solve. Either
+   the chain is downstream of this ledger — settling entries this ledger has
+   already verified and minted — or this ledger stops minting. It cannot be both
+   without a reconciliation story, and "both mint, we reconcile later" is the
+   version that quietly double-counts.
+2. **The energy figure stops being complete.** `est_kwh` accounts for the client's
+   solve and nothing else, which is honest today because nothing else is spent on
+   the player's behalf. Validators consuming energy to accept `MsgSolveHash` are
+   an unaccounted cost of minting, so `/audit/latest` would understate the true
+   figure while still being signed as if complete. A token whose entire claim is
+   honest energy accounting cannot acquire an energy cost it does not report.
+   Either the chain's per-transaction share enters `est_kwh`, or the report has to
+   say plainly which energy it covers.
+3. **`MsgSolveHash` is a Contracts v1 change.** `Submission` and `LedgerEntry` are
+   frozen. A new message type carrying a solve is a fourth contract, and by
+   `SEED.md` it changes only via clvi-architecture.
+
+The cheapest version that gets most of the benefit without any of this is **F3**:
+anchor the *signed audit report* rather than minting on-chain. It adds no minting
+authority, no per-solve transaction, and no contract change.
+
 ### F2 — Rust/Postgres north star (open)
 
 The CLVI programme documents name Rust + Postgres as the eventual server target.
@@ -164,3 +196,33 @@ the last gap in the trust story (today, an operator holding `LEDGER_SECRET` coul
 in principle rebuild the entire chain from scratch). Cheapest credible version:
 publish each daily report's signature to a second, independently-operated store.
 Worth a decision once M4-M6 are done.
+
+### F4 — Realtime session service (open)
+
+Nakama has been proposed for multiplayer session state and for leaderboards
+("most trash collected", "highest vertical layer"). Nothing in this repo serves
+either, and neither belongs here: the ledger's job ends at a verified, minted,
+auditable entry.
+
+A leaderboard is a *read* over `ledger` — a ranked aggregate of entries by player
+— so the natural seam is a query endpoint here that a session service consumes,
+not a second copy of the totals kept live elsewhere. Two copies of "most trash
+collected" will disagree, and only one of them is backed by a hash chain. If a
+realtime service is adopted, it should treat this ledger as the source of truth
+for anything a token was minted for, and keep its own state to things no token
+depends on.
+
+### F5 — Domain tables: salvage, biomes, upgrades (open)
+
+Also proposed: Postgres tables indexing salvage distribution, biome unlocks and
+upgrade tracking. This is the one part of that proposal that is *stack-compatible*
+with this repo — it is Postgres, it needs no new dependency, and it would sit
+beside `accounts` in `db/schema.sql`.
+
+It is still not in scope today, for two reasons. Contracts v1 has no vocabulary
+for salvage, biomes or upgrades, so adding them is a contract change that goes
+through clvi-architecture. And none of the three is append-only: an upgrade is
+mutable player state, which is a different integrity model from the ledger's and
+must never share its tables or its trigger. If they land here they are ordinary
+mutable tables, explicitly outside the audited set, and `docs/SCHEMA.md` has to
+say so.

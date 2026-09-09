@@ -2,6 +2,41 @@
 
 Newest first. One entry per session: date · what · why · files · verify result.
 
+## 2026-09-09 — record the Axum/Nakama/Cosmos proposal as future decisions
+
+**What.** Documentation only. No code, schema or contract changed. A backend
+architecture was proposed — Nakama for multiplayer session state and leaderboards,
+a Cosmos SDK chain formalizing `MsgSolveHash` with progression minted as Guardian
+Coin, and Postgres tables for salvage distribution, biome unlocks and upgrades.
+`docs/ARCHITECTURE.md` now records it: F1 gains a subsection on the Cosmos
+proposal, and F4 (realtime session service) and F5 (salvage/biome/upgrade tables)
+are new.
+
+**Why.** `SEED.md`'s stack rules forbid blockchain deployment and third-party
+token contracts in this repo, and instruct that the possibility be recorded as a
+future decision in `docs/ARCHITECTURE.md` instead. This is that record. Three
+objections are written down while they are cheap to act on:
+
+- The ledger already mints exactly one token per find, enforced by UNIQUE on
+  `guardian_tokens.entry_id`. A chain minting on `MsgSolveHash` is a second
+  minting authority for the same solve; one of the two has to be downstream.
+- `est_kwh` covers the client's solve only. Validator energy spent to accept
+  `MsgSolveHash` would be an unreported cost of minting, and `/audit/latest`
+  would be signed as complete while understating the true figure.
+- `MsgSolveHash` is a fourth contract. Contracts v1 are frozen and change only
+  via clvi-architecture.
+
+F5 is the one stack-compatible piece — it is plain Postgres — but salvage, biomes
+and upgrades are mutable player state, a different integrity model from the
+append-only ledger, and must never share its tables or its trigger.
+
+**Files.** `docs/ARCHITECTURE.md`, `docs/CHANGELOG.md`.
+
+**Verify.** `npm run build` **PASS** — `tsc` clean, `node --test` `# pass 60 /
+# fail 0`. The live walk in `docs/STATE.md#Verify` is still **NOT RUN**; this
+session changed no code and did not address that standing blocker, which remains
+item 1 of `Next`.
+
 ## 2026-09-03 — bootstrap M0, and M1-M3 written
 
 **What.** Brought the repo up from empty to a complete, unit-tested implementation
